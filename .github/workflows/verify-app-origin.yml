@@ -1,0 +1,26 @@
+name: Verify PR is from Our GitHub App
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  check-app-installation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify GitHub App
+        run: |
+          INSTALLATION_ID=$(jq -r '.installation.id // empty' "$GITHUB_EVENT_PATH")
+          if [ -z "$INSTALLATION_ID" ]; then
+            echo "Error: No GitHub App installation in PR event (possibly not from our App)."
+            exit 1
+          fi
+
+          # Lock to the specific 'AtkoOrg Create PR test' App ID:
+          REQUIRED_APP_ID="1093982"  # from the GitHub App settings
+          APP_ID=$(jq -r '.installation.app_id' "$GITHUB_EVENT_PATH")
+          if [ "$APP_ID" != "$REQUIRED_APP_ID" ]; then
+            echo "Error: PR is not from the correct App ID!"
+            exit 1
+          fi
+
+          echo "Success: This PR is from our GitHub App. ✅"
